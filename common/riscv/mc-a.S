@@ -1476,5 +1476,78 @@ function mc_copy_w16_rvv, export=1
     ret
 endfunc
 
+function plane_copy_core_rvv, export=1
+0:
+    mv t5, a2
+    mv t6, a4
+
+    add     t0, t5, t6                # srcend
+    add     t1, a0, t6                # dstend
+
+    vsetivli zero, 16, e8, m1, ta, ma
+    vle8.v  v3, (t5)                  # ldr D_q, [src]
+
+    andi    t2, t5, 15
+
+    li  t3, 16
+    sub t3, t3, t2
+    add t5, t5, t3
+    add a6, a0, t3
+    sub t6, t6, t3
+
+    vse8.v  v3, (a0)                  # str D_q, [dstin]
+
+    vsetvli zero, t6, e8, m2, ta, ma
+    vle8.v  v0, (t5)                  # A_q B_q
+   
+    addi    t4, t5, 32
+    vle8.v  v2, (t4)                  # C_q D_q
+    
+    li      t4, 128                   # 128
+    sub     t6, t6, t4
+    blez    t6, 3f
+2:
+
+    vse8.v  v0, (a6)                # A_q B_q
+   
+    addi    t4, t5, 64
+    vle8.v  v0, (t4)
+
+    addi    t4, a6, 32
+    vse8.v  v2, (t4)
+
+    addi    t4, t5, 96
+    vle8.v  v2, (t4)
+ 
+    addi    t5, t5, 64
+    addi    a6, a6, 64
+    addi    t6, t6, -64
+    bgtz    t6, 2b
+
+3:
+    addi    t4, t0, -64
+    vle8.v  v4, (t4)                  # E_q # F_q
+
+    vse8.v  v0, (a6)                  # A_q B_q
+
+    addi    t4, t0, -32
+    vle8.v  v0, (t4)                  
+              
+    addi    t4, a6, 32                # C_q D_q
+    vse8.v  v2, (t4)                  
+
+    addi    t4, t1, -64
+    vse8.v  v4, (t4)
+
+    addi    t4, t1, -32
+    vse8.v  v0, (t4)
+
+    add     a0, a0, a1
+    add     a2, a2, a3
+    addi    a5, a5, -1
+    bgtz    a5, 0b
+
+    ret
+endfunc
 #endif // BIT_DEPTH == 8
 
